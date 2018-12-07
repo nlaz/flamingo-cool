@@ -4,7 +4,6 @@ const axios = require("axios");
 const express = require("express");
 const bodyParser = require("body-parser");
 const qs = require("querystring");
-const ticket = require("./ticket");
 const signature = require("./verifySignature");
 const debug = require("debug")("slash-command-template:index");
 
@@ -41,13 +40,11 @@ const createEvent = (userId, title, userName) => ({
 });
 
 /*
- * Endpoint to receive /helpdesk slash command from Slack.
- * Checks verification token and opens a dialog to capture more info.
+ * Endpoint to receive /event slash command from Slack.
  */
 app.post("/event", (req, res) => {
   // extract the slash command text, and trigger ID from payload
   const { channel_id, text, user_id, user_name } = req.body;
-  console.log(req.body);
 
   res.send({ response_type: "in_channel" });
 
@@ -70,6 +67,7 @@ app.post("/event", (req, res) => {
             {
               fallback: "You are unable to RSVP.",
               color: "#6dc9da",
+              callback_id: "event_rsvp",
               actions: [
                 {
                   name: "yes",
@@ -95,19 +93,55 @@ app.post("/event", (req, res) => {
           ]),
         }),
       )
-      .then(result => {
-        console.log("sendConfirmation ", result.data);
-        res.send("");
-      })
       .catch(err => {
-        console.log("sendConfirmation error", err);
         console.error(err);
-        res.sendStatus(500);
       });
   } else {
     console.log("Verification token mismatch");
     res.sendStatus(404);
   }
+});
+
+const DEFAULT_ATTENDING_MSG = ":see_no_evil: _No one is attending yet._";
+
+app.post("/response", (req, res) => {
+  const { payload, ...rest } = req.body;
+  res.send("");
+  const { channel, user, original_message, ts } = JSON.parse(req.body.payload);
+
+  const current_user = `<@${user.id}>`;
+  const previous = original_message.attachments[2].text || "";
+  const attending = previous === DEFAULT_ATTENDING_MSG ? [] : previous.split(" ");
+
+  const updated =
+    attending.length > 0 && attending.indexOf(current_user) > -1
+      ? attending.filter(el => el !== current_user).join(" ")
+      : [...attending, current_user].join(" ");
+
+  axios
+    .post(
+      "https://slack.com/api/chat.update",
+      qs.stringify({
+        token: process.env.SLACK_ACCESS_TOKEN,
+        channel: channel.id,
+        as_user: true,
+        ts: original_message.ts,
+        attachments: JSON.stringify([
+          original_message.attachments[0],
+          original_message.attachments[1],
+          {
+            fallback: "No one is attending at the moment.",
+            color: "#6dc9da",
+            title: "Attending",
+            text: updated || DEFAULT_ATTENDING_MSG,
+          },
+          original_message.attachments[3],
+        ]),
+      }),
+    )
+    .catch(err => {
+      console.error(err);
+    });
 });
 
 const server = app.listen(process.env.PORT || 5000, () => {
