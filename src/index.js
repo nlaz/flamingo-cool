@@ -1,14 +1,14 @@
-require('dotenv').config();
+require("dotenv").config();
 
-const axios = require('axios');
-const express = require('express');
-const bodyParser = require('body-parser');
-const qs = require('querystring');
-const ticket = require('./ticket');
-const signature = require('./verifySignature');
-const debug = require('debug')('slash-command-template:index');
+const axios = require("axios");
+const express = require("express");
+const bodyParser = require("body-parser");
+const qs = require("querystring");
+const ticket = require("./ticket");
+const signature = require("./verifySignature");
+const debug = require("debug")("slash-command-template:index");
 
-const apiUrl = 'https://slack.com/api';
+const apiUrl = "https://slack.com/api";
 
 const app = express();
 
@@ -20,103 +20,100 @@ const app = express();
 
 const rawBodyBuffer = (req, res, buf, encoding) => {
   if (buf && buf.length) {
-    req.rawBody = buf.toString(encoding || 'utf8');
+    req.rawBody = buf.toString(encoding || "utf8");
   }
 };
 
-app.use(bodyParser.urlencoded({verify: rawBodyBuffer, extended: true }));
+app.use(bodyParser.urlencoded({ verify: rawBodyBuffer, extended: true }));
 app.use(bodyParser.json({ verify: rawBodyBuffer }));
 
-app.get('/', (req, res) => {
-  res.send('<h2>The Slash Command and Dialog app is running</h2> <p>Follow the' +
-  ' instructions in the README to configure the Slack App and your environment variables.</p>');
+app.get("/", (req, res) => {
+  res.send(
+    "<h2>The Slash Command and Dialog app is running</h2> <p>Follow the" +
+      " instructions in the README to configure the Slack App and your environment variables.</p>",
+  );
+});
+
+const createEvent = (userId, title, userName) => ({
+  userId,
+  title,
+  attending: [userId],
 });
 
 /*
  * Endpoint to receive /helpdesk slash command from Slack.
  * Checks verification token and opens a dialog to capture more info.
  */
-app.post('/command', (req, res) => {
+app.post("/event", (req, res) => {
   // extract the slash command text, and trigger ID from payload
-  const { text, trigger_id } = req.body;
+  const { channel_id, text, user_id, user_name } = req.body;
+  console.log(req.body);
+
+  res.send({ response_type: "in_channel" });
 
   // Verify the signing secret
   if (signature.isVerified(req)) {
-    // create the dialog payload - includes the dialog structure, Slack API token,
-    // and trigger ID
-    const dialog = {
-      token: process.env.SLACK_ACCESS_TOKEN,
-      trigger_id,
-      dialog: JSON.stringify({
-        title: 'Submit a helpdesk ticket',
-        callback_id: 'submit-ticket',
-        submit_label: 'Submit',
-        elements: [
-          {
-            label: 'Title',
-            type: 'text',
-            name: 'title',
-            value: text,
-            hint: '30 second summary of the problem',
-          },
-          {
-            label: 'Description',
-            type: 'textarea',
-            name: 'description',
-            optional: true,
-          },
-          {
-            label: 'Urgency',
-            type: 'select',
-            name: 'urgency',
-            options: [
-              { label: 'Low', value: 'Low' },
-              { label: 'Medium', value: 'Medium' },
-              { label: 'High', value: 'High' },
-            ],
-          },
-        ],
-      }),
-    };
+    const event = createEvent(user_id, text, user_name);
 
-    // open the dialog by calling dialogs.open method and sending the payload
-    axios.post(`${apiUrl}/dialog.open`, qs.stringify(dialog))
-      .then((result) => {
-        debug('dialog.open: %o', result.data);
-        res.send('');
-      }).catch((err) => {
-        debug('dialog.open call failed: %o', err);
+    axios
+      .post(
+        "https://slack.com/api/chat.postMessage",
+        qs.stringify({
+          token: process.env.SLACK_ACCESS_TOKEN,
+          channel: channel_id,
+          as_user: true,
+          attachments: JSON.stringify([
+            {
+              text: `You're invited to:\n *${event.title}*`,
+              color: "#6dc9da",
+            },
+            {
+              fallback: "You are unable to RSVP.",
+              color: "#6dc9da",
+              actions: [
+                {
+                  name: "yes",
+                  type: "button",
+                  text: "I'll be there",
+                  value: "yes",
+                },
+              ],
+            },
+            {
+              fallback: "No one is attending at the moment.",
+              color: "#6dc9da",
+              title: "Attending",
+              text: event.attending.map(el => `<@${el}>`).join(" "),
+            },
+            {
+              text: "",
+              color: "#6dc9da",
+              footer: "Open Invites",
+              footer_icon:
+                "https://avatars.slack-edge.com/2018-12-07/498573284562_c6a410065a16442b683e_96.png",
+            },
+          ]),
+        }),
+      )
+      .then(result => {
+        console.log("sendConfirmation ", result.data);
+        res.send("");
+      })
+      .catch(err => {
+        console.log("sendConfirmation error", err);
+        console.error(err);
         res.sendStatus(500);
       });
   } else {
-    debug('Verification token mismatch');
-    res.sendStatus(404);
-  }
-});
-
-/*
- * Endpoint to receive the dialog submission. Checks the verification token
- * and creates a Helpdesk ticket
- */
-app.post('/interactive', (req, res) => {
-  const body = JSON.parse(req.body.payload);
-
-  // check that the verification token matches expected value
-  if (signature.isVerified(req)) {
-    debug(`Form submission received: ${body.submission.trigger_id}`);
-
-    // immediately respond with a empty 200 response to let
-    // Slack know the command was received
-    res.send('');
-
-    // create Helpdesk ticket
-    ticket.create(body.user.id, body.submission);
-  } else {
-    debug('Token mismatch');
+    console.log("Verification token mismatch");
     res.sendStatus(404);
   }
 });
 
 const server = app.listen(process.env.PORT || 5000, () => {
-  console.log('Express server listening on port %d in %s mode', server.address().port, app.settings.env);
+  console.log(
+    "Express server listening on port %d in %s mode",
+    server.address().port,
+    app.settings.env,
+  );
 });
