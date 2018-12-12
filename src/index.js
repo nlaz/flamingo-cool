@@ -52,6 +52,11 @@ app.post("/event", (req, res) => {
   if (signature.isVerified(req)) {
     const event = createEvent(user_id, text, user_name);
 
+    const feedbackLink = "https://goo.gl/forms/IY9t25qqNWYLgW9u2";
+    const gcalLink = `http://www.google.com/calendar/event?action=TEMPLATE&text=${encodeURIComponent(
+      event.title,
+    )}`;
+
     axios
       .post(
         "https://slack.com/api/chat.postMessage",
@@ -86,9 +91,9 @@ app.post("/event", (req, res) => {
             {
               text: "",
               color: "#6dc9da",
-              footer: "Open Invites",
+              footer: `Open Invites    <${gcalLink}|Add to calendar>`,
               footer_icon:
-                "https://avatars.slack-edge.com/2018-12-07/498573284562_c6a410065a16442b683e_96.png",
+                "https://avatars.slack-edge.com/2018-12-11/502563278519_39d786b2bb6ef9fbab5a_96.png",
             },
           ]),
         }),
