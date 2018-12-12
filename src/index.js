@@ -6,6 +6,9 @@ const bodyParser = require("body-parser");
 const qs = require("querystring");
 const signature = require("./verifySignature");
 const debug = require("debug")("slash-command-template:index");
+const chrono = require("chrono-node");
+const queryString = require("query-string");
+const dateFormat = require("dateformat");
 
 const apiUrl = "https://slack.com/api";
 
@@ -53,9 +56,18 @@ app.post("/event", (req, res) => {
     const event = createEvent(user_id, text, user_name);
 
     const feedbackLink = "https://goo.gl/forms/IY9t25qqNWYLgW9u2";
-    const gcalLink = `http://www.google.com/calendar/event?action=TEMPLATE&text=${encodeURIComponent(
-      event.title,
-    )}`;
+    const parsedDate = chrono.parse(event.title)[0];
+    const startDate = parsedDate.start.date();
+    const oneHourAhead = new Date(startDate.getTime() + 1 * 60 * 60 * 1000);
+    const endDate = parsedDate.end ? parsedDate.end.date() : oneHourAhead;
+    const fmtStartDate = dateFormat(startDate, "UTC:yyyymmdd'T'HHMMss'Z'");
+    const fmtEndDate = dateFormat(endDate, "UTC:yyyymmdd'T'HHMMss'Z'");
+
+    const gcalLink = `http://www.google.com/calendar/event?${queryString.stringify({
+      action: "TEMPLATE",
+      text: event.title,
+      dates: `${fmtStartDate}/${fmtEndDate}`,
+    })}`;
 
     axios
       .post(
