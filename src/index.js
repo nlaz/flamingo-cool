@@ -42,33 +42,60 @@ const createEvent = (userId, title, userName) => ({
   attending: [userId],
 });
 
+const createUsageMessage = (userId, channelId) => {
+  axios
+  .post(
+    "https://slack.com/api/chat.postEphemeral",
+    qs.stringify({
+      token: process.env.SLACK_ACCESS_TOKEN,
+      channel: channelId,
+      as_user: true,
+      user: userId,
+      text: 'To create an invitation, try to formatting your message like this: \n `/whosin happy hour next week on wednesday 5pm-6pm`'
+    }),
+    )
+  .catch(err => {
+    console.error(err);
+  });
+}
+
 /*
- * Endpoint to receive /event slash command from Slack.
+ * Endpoint to receive /whosin slash command from Slack.
  */
-app.post("/event", (req, res) => {
+app.post("/whosin", (req, res) => {
   // extract the slash command text, and trigger ID from payload
   const { channel_id, text, user_id, user_name } = req.body;
 
-  res.send({ response_type: "in_channel" });
+  if (text.length > 0) {
+    res.send({ response_type: "in_channel" });
+  } else {
+    res.send('');
+  }
 
   // Verify the signing secret
   if (signature.isVerified(req)) {
+
+    if (text.length > 0) {
+
+    let gcalLink = '';
     const event = createEvent(user_id, text, user_name);
 
     const feedbackLink = "https://goo.gl/forms/IY9t25qqNWYLgW9u2";
     const parsedDate = chrono.parse(event.title)[0];
-    const startDate = parsedDate.start.date();
-    const oneHourAhead = new Date(startDate.getTime() + 1 * 60 * 60 * 1000);
-    const endDate = parsedDate.end ? parsedDate.end.date() : oneHourAhead;
-    const fmtStartDate = dateFormat(startDate, "UTC:yyyymmdd'T'HHMMss'Z'");
-    const fmtEndDate = dateFormat(endDate, "UTC:yyyymmdd'T'HHMMss'Z'");
 
-    const gcalLink = `http://www.google.com/calendar/event?${queryString.stringify({
-      action: "TEMPLATE",
-      text: event.title,
-      dates: `${fmtStartDate}/${fmtEndDate}`,
-    })}`;
+    if (parsedDate) {
+      const startDate = parsedDate.start.date();
+      const oneHourAhead = new Date(startDate.getTime() + 1 * 60 * 60 * 1000);
+      const endDate = parsedDate.end ? parsedDate.end.date() : oneHourAhead;
+      const fmtStartDate = dateFormat(startDate, "UTC:yyyymmdd'T'HHMMss'Z'");
+      const fmtEndDate = dateFormat(endDate, "UTC:yyyymmdd'T'HHMMss'Z'");
 
+      gcalLink = `http://www.google.com/calendar/event?${queryString.stringify({
+        action: "TEMPLATE",
+        text: event.title,
+        dates: `${fmtStartDate}/${fmtEndDate}`,
+      })}`;
+    }
     axios
       .post(
         "https://slack.com/api/chat.postMessage",
@@ -89,7 +116,7 @@ app.post("/event", (req, res) => {
                 {
                   name: "yes",
                   type: "button",
-                  text: "I'll be there",
+                  text: ":tada: I'll be there",
                   value: "yes",
                 },
               ],
@@ -103,7 +130,7 @@ app.post("/event", (req, res) => {
             {
               text: "",
               color: "#6dc9da",
-              footer: `Open Invites    <${gcalLink}|Add to calendar>`,
+              footer: `Who's In   <${feedbackLink}|Feedback>`,
               footer_icon:
                 "https://avatars.slack-edge.com/2018-12-11/502563278519_39d786b2bb6ef9fbab5a_96.png",
             },
@@ -113,6 +140,10 @@ app.post("/event", (req, res) => {
       .catch(err => {
         console.error(err);
       });
+    } else {
+      // Message is empty.
+      createUsageMessage(user_id, channel_id);
+    }
   } else {
     console.log("Verification token mismatch");
     res.sendStatus(404);
@@ -127,14 +158,59 @@ app.post("/response", (req, res) => {
   const { channel, user, original_message, ts } = JSON.parse(req.body.payload);
 
   const current_user = `<@${user.id}>`;
-  const previous = original_message.attachments[2].text || "";
-  const attending = previous === DEFAULT_ATTENDING_MSG ? [] : previous.split(" ");
+  const previousTitle = original_message.attachments[0].text || '';
+  const previousAttending = original_message.attachments[2].text || "";
+  const attending = previousAttending === DEFAULT_ATTENDING_MSG ? [] : previousAttending.split(" ");
 
   const updated =
     attending.length > 0 && attending.indexOf(current_user) > -1
       ? attending.filter(el => el !== current_user).join(" ")
       : [...attending, current_user].join(" ");
 
+    let fmtStartDate;
+    let fmtEndDate;
+    const title = previousTitle.substring(21, previousTitle.length - 1);
+
+    const parsedDate = chrono.parse(title)[0];
+
+    if (parsedDate) {
+      const startDate = parsedDate.start.date();
+      const oneHourAhead = new Date(startDate.getTime() + 1 * 60 * 60 * 1000);
+      const endDate = parsedDate.end ? parsedDate.end.date() : oneHourAhead;
+      fmtStartDate = dateFormat(startDate, "UTC:yyyymmdd'T'HHMMss'Z'");
+      fmtEndDate = dateFormat(endDate, "UTC:yyyymmdd'T'HHMMss'Z'");
+    }
+
+    const gcalLink = `http://www.google.com/calendar/event?${queryString.stringify({
+        action: "TEMPLATE",
+        text: title,
+        dates: fmtStartDate && fmtEndDate ? `${fmtStartDate}/${fmtEndDate}` : undefined,
+      })}`;
+
+  axios
+  .post(
+    "https://slack.com/api/chat.postEphemeral",
+    qs.stringify({
+      token: process.env.SLACK_ACCESS_TOKEN,
+      channel: channel.id,
+      as_user: true,
+      user: user.id,
+      text: 'Sweet you’re in! Add it to your calendar:',
+      attachments: JSON.stringify([
+            {
+              fallback: gcalLink,
+              color: "#6dc9da",
+              actions: [
+                {
+                  type: "button",
+                  text: "Add to calendar",
+                  url: gcalLink,
+                },
+              ],
+            },
+          ]),
+    }),
+    );
   axios
     .post(
       "https://slack.com/api/chat.update",
