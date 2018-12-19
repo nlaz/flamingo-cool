@@ -11,6 +11,7 @@ const queryString = require("query-string");
 const dateFormat = require("dateformat");
 
 const apiUrl = "https://slack.com/api";
+const { getEmoji } = require("./emojis");
 
 const app = express();
 
@@ -81,6 +82,7 @@ app.post("/whosin", (req, res) => {
 
       const feedbackLink = "https://goo.gl/forms/IY9t25qqNWYLgW9u2";
       const parsedDate = chrono.parse(event.title)[0];
+      const emoji = getEmoji(text);
 
       if (parsedDate) {
         const startDate = parsedDate.start.date();
@@ -115,7 +117,7 @@ app.post("/whosin", (req, res) => {
                   {
                     name: "yes",
                     type: "button",
-                    text: ":tada: I'll be there",
+                    text: `${emoji} I'll be there`,
                     value: "yes",
                   },
                 ],
@@ -226,29 +228,32 @@ app.post("/response", (req, res) => {
       dates: fmtStartDate && fmtEndDate ? `${fmtStartDate}/${fmtEndDate}` : undefined,
     })}`;
 
-    axios.post(
-      "https://slack.com/api/chat.postEphemeral",
-      qs.stringify({
-        token: process.env.SLACK_ACCESS_TOKEN,
-        channel: channel.id,
-        as_user: true,
-        user: user.id,
-        text: "Sweet you’re in! Add it to your calendar:",
-        attachments: JSON.stringify([
-          {
-            fallback: gcalLink,
-            color: "#6dc9da",
-            actions: [
-              {
-                type: "button",
-                text: "Add to calendar",
-                url: gcalLink,
-              },
-            ],
-          },
-        ]),
-      }),
-    );
+    if (!isAlreadyGoing) {
+      axios.post(
+        "https://slack.com/api/chat.postEphemeral",
+        qs.stringify({
+          token: process.env.SLACK_ACCESS_TOKEN,
+          channel: channel.id,
+          as_user: true,
+          user: user.id,
+          text: "Sweet you’re in! Add it to your calendar:",
+          attachments: JSON.stringify([
+            {
+              fallback: gcalLink,
+              color: "#6dc9da",
+              actions: [
+                {
+                  type: "button",
+                  text: "Add to calendar",
+                  url: gcalLink,
+                },
+              ],
+            },
+          ]),
+        }),
+      );
+    }
+
     axios
       .post(
         "https://slack.com/api/chat.update",
