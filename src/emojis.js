@@ -5,12 +5,15 @@ const keywords = {
   cookie: ":cookie:",
   pizza: ":pizza:",
   "happy hour": ":cocktail:",
-  beers: ":beers:",
   beer: ":beer:",
+  beers: ":beers:",
   book: ":book:",
   lunch: ":fork_and_knife:",
   dinner: ":knife_fork_plate:",
   coffee: ":coffee:",
+  soccer: ":soccer:",
+  basketball: ":basketball:",
+  golf: ":golf:",
 };
 
 const getEmoji = text => {
