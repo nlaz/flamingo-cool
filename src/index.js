@@ -83,7 +83,7 @@ const cancelEvent = (req, res) => {
 
   // Deletes event
   const previousTitle = message.attachments[0].text || "";
-  const title = previousTitle.substring(21, previousTitle.length - 1);
+  const title = previousTitle.substring(20, previousTitle.length - 1);
 
   const previousAttending = message.attachments[2].text || "";
   const attending = previousAttending === DEFAULT_ATTENDING_MSG ? [] : previousAttending.split(" ");
@@ -108,7 +108,7 @@ const updateAttending = (req, res) => {
 
   // Handles event response
   const previousTitle = original_message.attachments[0].text || "";
-  const title = previousTitle.substring(21, previousTitle.length - 1);
+  const title = previousTitle.substring(20, previousTitle.length - 1);
 
   const attendingText = original_message.attachments[2].text || "";
   const previousAttending = attendingText === DEFAULT_ATTENDING_MSG ? [] : attendingText.split(" ");
@@ -130,7 +130,7 @@ const updateAttending = (req, res) => {
 
       const startDate = parsedDate ? parsedDate.start.date() : new Date();
       const oneHourAhead = new Date(startDate.getTime() + 1 * 60 * 60 * 1000);
-      const endDate = parsedDate.end ? parsedDate.end.date() : oneHourAhead;
+      const endDate = (parsedDate && parsedDate.end) ? parsedDate.end.date() : oneHourAhead;
       const fmtStartDate = dateFormat(startDate, "UTC:yyyymmdd'T'HHMMss'Z'");
       const fmtEndDate = dateFormat(endDate, "UTC:yyyymmdd'T'HHMMss'Z'");
 
@@ -138,7 +138,7 @@ const updateAttending = (req, res) => {
         action: "TEMPLATE",
         text: title,
         dates: `${fmtStartDate}/${fmtEndDate}`,
-        details: `Event created by Felix via Slack:\n\n${permalink}`,
+        details: `Event created by Flamingo via Slack.\n${permalink}`,
       })}`;
 
       api.createCalendarMessage(channel.id, user.id, gcalLink);

@@ -14,7 +14,7 @@ const DEFAULT_ATTENDING_MSG = ":see_no_evil: _No one is attending yet._";
 /* Attachments helpers */
 const getInviteAttachments = (channelId, title, attending, emoji) => [
   {
-    text: `You're invited to:\n *${title}*`,
+    text: `You're invited to\n *${title}*`,
     color: MESSAGE_COLOR,
   },
   {
@@ -39,7 +39,7 @@ const getInviteAttachments = (channelId, title, attending, emoji) => [
   {
     text: "",
     color: MESSAGE_COLOR,
-    footer: `Felix    <${FEEDBACK_LINK}|Feedback>`,
+    footer: `Flamingo   <${FEEDBACK_LINK}|Feedback>`,
     footer_icon: FOOTER_ICON,
   },
 ];
@@ -78,13 +78,13 @@ module.exports.fetchPermalink = (channelId, messageTs) => {
 
 module.exports.createUsageMessage = (userId, channelId) => {
   const text =
-    "To create an invitation, try to formatting your message like this: \n `/flamingo happy hour next week on wednesday 5pm-6pm`";
+    "To create an invitation, try formatting your message like this: \n `/flamingo happy hour next week on wednesday 5-6pm`";
   const body = { token, text, channel: channelId, as_user: true, user: userId };
   return axios.post("https://slack.com/api/chat.postEphemeral", qs.stringify(body));
 };
 
 module.exports.createCalendarMessage = (channel, userId, gcalLink) => {
-  const text = "*Sweet you’re in!* Add it to your calendar:";
+  const text = "You’re in! Add it to your calendar.";
   const attachments = JSON.stringify(getCalendarAttachments(gcalLink));
   const body = { token, channel, text, attachments, user: userId, as_user: true };
   return axios.post("https://slack.com/api/chat.postEphemeral", qs.stringify(body));
