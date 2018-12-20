@@ -2,6 +2,8 @@ const axios = require("axios");
 const qs = require("querystring");
 
 const token = process.env.SLACK_ACCESS_TOKEN;
+const client_id = process.env.SLACK_CLIENT_ID;
+const client_secret = process.env.SLACK_CLIENT_SECRET;
 
 const MESSAGE_COLOR = "#6ECADC";
 const FEEDBACK_LINK = "https://goo.gl/forms/IY9t25qqNWYLgW9u2";
@@ -108,4 +110,9 @@ module.exports.deleteMessage = (channel, userId, messageTs) => {
 module.exports.createCancellationMessage = (channel, userId, text) => {
   const body = { token, channel, as_user: true, user: userId, text };
   return axios.post("https://slack.com/api/chat.postEphemeral", qs.stringify(body));
+};
+
+module.exports.postOAuth = code => {
+  const data = { code, client_id, client_secret };
+  return axios.post("https://slack.com/api/oauth.access", qs.stringify(data));
 };

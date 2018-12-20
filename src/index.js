@@ -14,6 +14,7 @@ const { getEmoji } = require("./emojis");
 
 const app = express();
 
+let oauthToken;
 const DEFAULT_ATTENDING_MSG = ":see_no_evil: _No one is attending yet._";
 /*
  * Parse application/x-www-form-urlencoded && application/json
@@ -33,8 +34,13 @@ app.use(bodyParser.json({ verify: rawBodyBuffer }));
 app.get("/", (req, res) => {
   res.send(
     "<h2>The Slash Command and Dialog app is running</h2> <p>Follow the" +
-      " instructions in the README to configure the Slack App and your environment variables.</p>",
+      " instructions in the README to configure the Slack App and your environment variables.</p>" +
+      '<a href="https://slack.com/oauth/authorize?client_id=2171069148.498357548532&scope=commands,bot,users:read,users:read.email,chat:write:bot,links:read"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>',
   );
+});
+
+app.get("/success", (req, res) => {
+  res.send("<h2>Success! App has been authorized!</h2>");
 });
 
 const createEvent = (userId, title, userName) => ({ userId, title, attending: [userId] });
@@ -150,6 +156,24 @@ app.post("/response", async (req, res) => {
   } else if (callback_id === "event_rsvp") {
     await updateAttending(req, res);
   }
+});
+
+app.get("/auth", function(req, res) {
+  if (!req.query.code) {
+    return;
+  }
+
+  api
+    .postOAuth(req.query.code)
+    .then(response => {
+      oauthToken = response.data.access_token;
+      if (oauthToken) {
+        res.redirect("/success");
+      } else {
+        res.redirect("/");
+      }
+    })
+    .catch(error => console.error(error));
 });
 
 const server = app.listen(process.env.PORT || 5000, () => {
