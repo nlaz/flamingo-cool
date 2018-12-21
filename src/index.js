@@ -184,7 +184,11 @@ app.get("/auth", function(req, res) {
     .then(async response => {
       const { access_token, team_id } = response.data;
       if (access_token) {
-        await redis.set(team_id, access_token);
+        try {
+          await redis.set(team_id, access_token);
+        } catch (err) {
+          console.error(err);
+        }
         res.redirect("/success");
       } else {
         res.redirect("/?error=invalid_authentication");
