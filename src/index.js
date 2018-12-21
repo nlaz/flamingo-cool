@@ -175,7 +175,7 @@ app.post("/response", async (req, res) => {
 
 app.get("/auth", function(req, res) {
   if (!req.query.code) {
-    res.redirect("/?error=invalid_authentication");
+    res.redirect("/?error=invalid_code");
     return;
   }
 
@@ -184,11 +184,7 @@ app.get("/auth", function(req, res) {
     .then(async response => {
       const { access_token, team_id } = response.data;
       if (access_token) {
-        try {
-          await redis.set(team_id, access_token);
-        } catch (err) {
-          console.error(err);
-        }
+        await redis.set(team_id, access_token);
         res.redirect("/success");
       } else {
         res.redirect("/?error=invalid_authentication");
