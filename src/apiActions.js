@@ -14,9 +14,6 @@ const DEFAULT_ATTENDING_MSG = ":see_no_evil: _No one is attending yet._";
 const getInviteAttachments = (channelId, title, attending, emoji) => [
   {
     text: `You're invited to\n *${title}*`,
-    color: MESSAGE_COLOR,
-  },
-  {
     fallback: "You are unable to RSVP.",
     color: MESSAGE_COLOR,
     callback_id: "event_rsvp",
