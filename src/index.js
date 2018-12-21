@@ -81,10 +81,10 @@ app.post("/flamingo", async (req, res) => {
  */
 const cancelEvent = async (req, res) => {
   const payload = JSON.parse(req.body.payload);
-  const { channel, user, team_id, message_ts, message } = payload;
+  const { channel, user, team, message_ts, message } = payload;
 
   // Fetch token from redis
-  const token = await redis.getAsync(team_id);
+  const token = await redis.getAsync(team.id);
 
   const current_user = `<@${user.id}>`;
 
@@ -119,7 +119,7 @@ const updateAttending = async (req, res) => {
   const previousTitle = original_message.attachments[0].text || "";
   const title = previousTitle.substring(20, previousTitle.length - 1);
 
-  const attendingText = original_message.attachments[2].text || "";
+  const attendingText = original_message.attachments[1].text || "";
   const previousAttending = attendingText === DEFAULT_ATTENDING_MSG ? [] : attendingText.split(" ");
 
   const isAlreadyGoing =
