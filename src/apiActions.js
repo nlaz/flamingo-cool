@@ -1,7 +1,6 @@
 const axios = require("axios");
 const qs = require("querystring");
 
-const token = process.env.SLACK_ACCESS_TOKEN;
 const client_id = process.env.SLACK_CLIENT_ID;
 const client_secret = process.env.SLACK_CLIENT_SECRET;
 
@@ -71,43 +70,49 @@ const getCalendarAttachments = gcalLink => [
 ];
 
 /* Api request functions */
-module.exports.fetchPermalink = (channelId, messageTs) => {
+module.exports.fetchPermalink = (token, channelId, messageTs) => {
   const body = { token, channel: channelId, message_ts: messageTs };
   return axios.get("https://slack.com/api/chat.getPermalink?" + qs.stringify(body));
 };
 
-module.exports.createUsageMessage = (userId, channelId) => {
+module.exports.createUsageMessage = (token, userId, channelId) => {
   const text =
     "To create an invitation, try formatting your message like this: \n `/flamingo happy hour next week on wednesday 5-6pm`";
   const body = { token, text, channel: channelId, as_user: true, user: userId };
   return axios.post("https://slack.com/api/chat.postEphemeral", qs.stringify(body));
 };
 
-module.exports.createCalendarMessage = (channel, userId, gcalLink) => {
+module.exports.createCalendarMessage = (token, channel, userId, gcalLink) => {
   const text = "You’re in! Add it to your calendar.";
   const attachments = JSON.stringify(getCalendarAttachments(gcalLink));
   const body = { token, channel, text, attachments, user: userId, as_user: true };
   return axios.post("https://slack.com/api/chat.postEphemeral", qs.stringify(body));
 };
 
-module.exports.createInviteMessage = (channelId, title, attending, emoji) => {
+module.exports.createInviteMessage = (token, channelId, title, attending, emoji) => {
   const attachments = JSON.stringify(getInviteAttachments(channelId, title, attending, emoji));
   const body = { token, attachments, channel: channelId, as_user: true };
   return axios.post("https://slack.com/api/chat.postMessage", qs.stringify(body));
 };
 
-module.exports.updateInviteMessage = (channel, attending, messageTs, original_attachments) => {
+module.exports.updateInviteMessage = (
+  token,
+  channel,
+  attending,
+  messageTs,
+  original_attachments,
+) => {
   const attachments = JSON.stringify(getUpdatedAttachments(original_attachments, attending));
   const body = { token, channel, attachments, as_user: true, ts: messageTs };
   return axios.post("https://slack.com/api/chat.update", qs.stringify(body));
 };
 
-module.exports.deleteMessage = (channel, userId, messageTs) => {
+module.exports.deleteMessage = (token, channel, userId, messageTs) => {
   const body = { token, channel, as_user: true, user: userId, ts: messageTs };
   return axios.post("https://slack.com/api/chat.delete", qs.stringify(body));
 };
 
-module.exports.createCancellationMessage = (channel, userId, text) => {
+module.exports.createCancellationMessage = (token, channel, userId, text) => {
   const body = { token, channel, as_user: true, user: userId, text };
   return axios.post("https://slack.com/api/chat.postEphemeral", qs.stringify(body));
 };

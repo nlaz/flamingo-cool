@@ -9,12 +9,12 @@ const chrono = require("chrono-node");
 const queryString = require("query-string");
 const dateFormat = require("dateformat");
 const api = require("./apiActions");
+const redis = require("./redis");
 
 const { getEmoji } = require("./emojis");
 
 const app = express();
 
-let oauthToken;
 const DEFAULT_ATTENDING_MSG = ":see_no_evil: _No one is attending yet._";
 /*
  * Parse application/x-www-form-urlencoded && application/json
@@ -27,6 +27,10 @@ const rawBodyBuffer = (req, res, buf, encoding) => {
     req.rawBody = buf.toString(encoding || "utf8");
   }
 };
+
+redis.on("error", function(err) {
+  console.error("Error " + err);
+});
 
 app.use(bodyParser.urlencoded({ verify: rawBodyBuffer, extended: true }));
 app.use(bodyParser.json({ verify: rawBodyBuffer }));
@@ -48,22 +52,23 @@ const createEvent = (userId, title, userName) => ({ userId, title, attending: [u
 /*
  * Endpoint to receive /whosin slash command from Slack.
  */
-app.post("/flamingo", (req, res) => {
+app.post("/flamingo", async (req, res) => {
   // extract the slash command text, and trigger ID from payload
-  const { channel_id, text, user_id, user_name } = req.body;
+  const { channel_id, text, user_id, user_name, team_id } = req.body;
+  const token = await redis.getAsync(team_id);
 
   res.send(text.length > 0 ? { response_type: "in_channel" } : "");
 
   // Verify the signing secret
   if (signature.isVerified(req)) {
-    if (text.length === 0) {
+    if (text.length === 0 || text === "help") {
       // Message is empty.
-      api.createUsageMessage(user_id, channel_id);
+      api.createUsageMessage(token, user_id, channel_id);
     } else {
       const event = createEvent(user_id, text, user_name);
       const emoji = getEmoji(text);
 
-      api.createInviteMessage(channel_id, event.title, event.attending, emoji);
+      api.createInviteMessage(token, channel_id, event.title, event.attending, emoji);
     }
   } else {
     console.log("Verification token mismatch");
@@ -74,10 +79,12 @@ app.post("/flamingo", (req, res) => {
 /**
  * Handles canceling event logic.
  */
-const cancelEvent = (req, res) => {
-  const { channel, user, original_message, callback_id, message_ts, ts, message } = JSON.parse(
-    req.body.payload,
-  );
+const cancelEvent = async (req, res) => {
+  const payload = JSON.parse(req.body.payload);
+  const { channel, user, team_id, message_ts, message } = payload;
+
+  // Fetch token from redis
+  const token = await redis.getAsync(team_id);
 
   const current_user = `<@${user.id}>`;
 
@@ -88,21 +95,23 @@ const cancelEvent = (req, res) => {
   const previousAttending = message.attachments[2].text || "";
   const attending = previousAttending === DEFAULT_ATTENDING_MSG ? [] : previousAttending.split(" ");
 
-  api.deleteMessage(channel.id, user.id, message_ts);
+  api.deleteMessage(token, channel.id, user.id, message_ts);
 
   attending.map(el => {
     const userId = el.substring(2, el.length - 1);
     const text = `${current_user} canceled the event: *${title}*`;
-    api.createCancellationMessage(channel.id, userId, text);
+    api.createCancellationMessage(token, channel.id, userId, text);
   });
 };
 
 /**
  * Update attending list.
  */
-const updateAttending = (req, res) => {
-  const { payload, ...rest } = req.body;
-  const { channel, user, original_message, message_ts, ts, message } = JSON.parse(req.body.payload);
+const updateAttending = async (req, res) => {
+  const { channel, user, original_message, message_ts, team } = JSON.parse(req.body.payload);
+
+  // Fetch token from redis
+  const token = await redis.getAsync(team.id);
 
   const current_user = `<@${user.id}>`;
 
@@ -119,18 +128,24 @@ const updateAttending = (req, res) => {
     ? previousAttending.filter(el => el !== current_user).join(" ")
     : [...previousAttending, current_user].join(" ");
 
-  api.updateInviteMessage(channel.id, attending, original_message.ts, original_message.attachments);
+  api.updateInviteMessage(
+    token,
+    channel.id,
+    attending,
+    original_message.ts,
+    original_message.attachments,
+  );
 
   if (!isAlreadyGoing) {
     // Generate Google Calendar link
 
-    api.fetchPermalink(channel.id, original_message.ts).then(response => {
+    api.fetchPermalink(token, channel.id, original_message.ts).then(response => {
       const parsedDate = chrono.parse(title)[0];
       const permalink = response.data.permalink;
 
       const startDate = parsedDate ? parsedDate.start.date() : new Date();
       const oneHourAhead = new Date(startDate.getTime() + 1 * 60 * 60 * 1000);
-      const endDate = (parsedDate && parsedDate.end) ? parsedDate.end.date() : oneHourAhead;
+      const endDate = parsedDate && parsedDate.end ? parsedDate.end.date() : oneHourAhead;
       const fmtStartDate = dateFormat(startDate, "UTC:yyyymmdd'T'HHMMss'Z'");
       const fmtEndDate = dateFormat(endDate, "UTC:yyyymmdd'T'HHMMss'Z'");
 
@@ -141,7 +156,7 @@ const updateAttending = (req, res) => {
         details: `Event created by Flamingo via Slack.\n${permalink}`,
       })}`;
 
-      api.createCalendarMessage(channel.id, user.id, gcalLink);
+      api.createCalendarMessage(token, channel.id, user.id, gcalLink);
     });
   }
 };
@@ -160,17 +175,19 @@ app.post("/response", async (req, res) => {
 
 app.get("/auth", function(req, res) {
   if (!req.query.code) {
+    res.redirect("/?error=invalid_authentication");
     return;
   }
 
   api
     .postOAuth(req.query.code)
-    .then(response => {
-      oauthToken = response.data.access_token;
-      if (oauthToken) {
+    .then(async response => {
+      const { access_token, team_id } = response.data;
+      if (access_token) {
+        await redis.set(team_id, access_token);
         res.redirect("/success");
       } else {
-        res.redirect("/");
+        res.redirect("/?error=invalid_authentication");
       }
     })
     .catch(error => console.error(error));
