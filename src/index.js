@@ -38,11 +38,11 @@ app.use(bodyParser.json({ verify: rawBodyBuffer }));
 app.use(express.static(__dirname + "/public"));
 
 app.get("/", function(req, res) {
-  res.sendfile(__dirname + "/public/index.html");
+  res.sendFile(__dirname + "/public/index.html");
 });
 
 app.get("/success", (req, res) => {
-  res.sendfile(__dirname + "/public/success.html");
+  res.sendFile(__dirname + "/public/success.html");
 });
 
 const createEvent = (userId, title, userName) => ({ userId, title, attending: [userId] });
@@ -52,21 +52,22 @@ const createEvent = (userId, title, userName) => ({ userId, title, attending: [u
  */
 app.post("/flamingo", async (req, res) => {
   // extract the slash command text, and trigger ID from payload
-  const { channel_id, text, user_id, user_name, team_id } = req.body;
+  const { channel_id, text = "", user_id, user_name, team_id } = req.body;
   const token = await redis.getAsync(team_id);
-
   res.send(text.length > 0 ? { response_type: "in_channel" } : "");
 
   // Verify the signing secret
   if (signature.isVerified(req)) {
     if (text.length === 0 || text === "help") {
       // Message is empty.
-      api.createUsageMessage(token, user_id, channel_id);
+      api.createUsageMessage(token, user_id, channel_id).catch(error => console.log(error));
     } else {
       const event = createEvent(user_id, text, user_name);
       const emoji = getEmoji(text);
 
-      api.createInviteMessage(token, channel_id, event.title, event.attending, emoji);
+      api
+        .createInviteMessage(token, channel_id, event.title, event.attending, emoji)
+        .catch(error => console.log(error));
     }
   } else {
     console.log("Verification token mismatch");
@@ -90,15 +91,18 @@ const cancelEvent = async (req, res) => {
   const previousTitle = message.attachments[0].text || "";
   const title = previousTitle.substring(20, previousTitle.length - 1);
 
-  const previousAttending = message.attachments[2].text || "";
+  const previousAttending = message.attachments[1].text || "";
   const attending = previousAttending === DEFAULT_ATTENDING_MSG ? [] : previousAttending.split(" ");
 
-  api.deleteMessage(token, channel.id, user.id, message_ts);
+  api.deleteMessage(token, channel.id, user.id, message_ts).catch(error => console.log(error));
 
   attending.map(el => {
     const userId = el.substring(2, el.length - 1);
     const text = `${current_user} canceled the event: *${title}*`;
-    api.createCancellationMessage(token, channel.id, userId, text);
+
+    api
+      .createCancellationMessage(token, channel.id, userId, text)
+      .catch(error => console.log(error));
   });
 };
 
