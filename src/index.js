@@ -35,16 +35,14 @@ redis.on("error", function(err) {
 app.use(bodyParser.urlencoded({ verify: rawBodyBuffer, extended: true }));
 app.use(bodyParser.json({ verify: rawBodyBuffer }));
 
-app.get("/", (req, res) => {
-  res.send(
-    "<h2>The Slash Command and Dialog app is running</h2> <p>Follow the" +
-      " instructions in the README to configure the Slack App and your environment variables.</p>" +
-      '<a href="https://slack.com/oauth/authorize?client_id=2171069148.498357548532&scope=commands,bot,users:read,users:read.email,chat:write:bot,links:read"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>',
-  );
+app.use(express.static(__dirname + "/public"));
+
+app.get("/", function(req, res) {
+  res.sendfile(__dirname + "/public/index.html");
 });
 
 app.get("/success", (req, res) => {
-  res.send("<h2>Success! App has been authorized!</h2>");
+  res.sendfile(__dirname + "/public/success.html");
 });
 
 const createEvent = (userId, title, userName) => ({ userId, title, attending: [userId] });

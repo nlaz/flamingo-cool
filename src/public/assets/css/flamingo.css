@@ -1,0 +1,284 @@
+body {
+  font-family: 'Poppins', sans-serif;
+  color: #000;
+  margin: 0px;
+  padding: 0px;
+  font-weight: 500;
+}
+
+h1 {
+	font-size: 3.4rem;
+	line-height: 4rem;
+	margin: 0px;
+}
+
+h2 { 
+	font-size: 1.9rem;
+	margin: 0px;
+}
+
+a {
+	color:#FFF;
+	text-decoration:none;
+	border-bottom: 1px solid #FFF;
+}
+
+.btn {
+	padding: 12px 20px;
+	border-radius: 200px;
+	background-color: #fff;
+	color: #3b3b3b;
+	font-size: 1rem;
+	font-weight: normal;
+
+	transition: all 0.3s ease-in-out;
+	box-shadow: 2px 3px 10px 0px rgba(0, 0, 0, .1);
+}
+
+	.btn:hover {
+		box-shadow: 4px 7px 12px 0px rgba(0, 0, 0, .2);
+		padding-top: 8px 20px;
+
+	}
+
+.lato {
+	font-family: 'Lato', sans-serif;
+}
+
+.m-b-2 {
+	margin-bottom: 2rem;
+}
+
+.m-b-4 {
+	margin-bottom: 4rem;
+}
+
+
+/*--Main content styles--*/
+
+.hero {
+	background-color:#DDDE60;
+	height: 90vh;
+	color: #7E7719;
+	position: relative;
+}
+
+.hero.success {
+	height: 100vh;
+}
+
+.hero .hero-content {
+	position: absolute;
+  	top: 50%;
+  	left: 50%;
+  	transform: translate(-50%, -50%);
+	text-align: center;
+	width: 80%;
+}
+
+.slack-icon {
+	padding-right: 6px;
+	position: relative;
+	top: 4px;
+}
+
+.flamingo {
+	position: fixed;
+	bottom: 0rem;
+	right: 10%;
+	z-index: 1000;
+}
+
+.feature-card {
+	padding: 10% 15%;
+	height: 35vh;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+}
+
+	.feature-card:nth-child(1) {
+	  background: #FEF78D;
+	  color: #A29911;
+	}
+
+	.feature-card:nth-child(2) {
+	  background: #FFA9B1;
+	  color: #BC4A55;
+	}
+
+	.feature-card:nth-child(3) {
+	  background: #6ECADC;
+	  color: #2C7583;
+	}
+
+	.feature-card:nth-child(4) {
+	  background: #4EABBB;
+	  color: #1E5661;
+	}
+
+.feature-card .feature-text {
+	padding: 0 40px 26px 0;
+	max-width: 35%;
+}
+
+.invoke-img {
+	background-image: url(../img/flamingo-invoke-img@2x.png); 
+	background-size: contain;
+	background-repeat: no-repeat;
+	width: 470px;
+	height: 45px;
+}
+
+.invoke-text {
+	position: relative;
+	top: -50px;
+	right: -56px;
+}
+
+.guestlist-img {
+	background-image: url(../img/flamingo-guestlist-lg@2x.png); 
+	background-size: contain;
+	background-repeat: no-repeat;
+	width: 536px;
+	height: 250px;
+}
+
+.calendar-img {
+	background-image: url(../img/flamingo-calendar-lg@2x.png); 
+	background-size: contain;
+	background-repeat: no-repeat;
+	width: 536px;
+	height: 195px;
+}
+
+.pizza-club-img {
+	background-image: url(../img/flamingo-pizzaclub@2x.png); 
+	background-size: contain;
+	background-repeat: no-repeat;
+	width: 536px;
+	height: 100px;
+}
+
+.wine-tasting-img {
+	background-image: url(../img/flamingo-winetasting@2x.png); 
+	background-size: contain;
+	background-repeat: no-repeat;
+	width: 536px;
+	height: 100px;
+}
+
+.book-club-img {
+	background-image: url(../img/flamingo-bookclub@2x.png); 
+	background-size: contain;
+	background-repeat: no-repeat;
+	width: 536px;
+	height: 100px;
+}
+
+
+
+
+/*--Footer--*/
+
+.footer {
+	background-color: #333;
+	color: #fff;
+	padding: 10% 15%;
+}
+
+.feedback {
+	font-size: 1.2rem;
+}
+
+.copyright {
+	color: #999;
+}
+
+
+/*--Responsivene adjustments--*/
+
+@media (max-width: 1280px) {
+
+	.feature-card {
+		padding: 10% 8%;
+	}
+
+	.footer {
+		padding: 8% 8%;
+	}
+}
+
+@media (max-width: 720px) {
+
+	.hero .hero-content {
+	  	transform: translate(-50%, -50%);
+		width: 80%;
+	}
+
+	.flamingo {
+		right: 8%;
+	}
+
+	.feature-card {
+		padding: 10% 10%;
+		height: 60vh;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-start;
+		align-items: flex-start;
+	}
+
+	.feature-card .feature-text {
+		padding: 0 40px 26px 0;
+		max-width: 100%;
+	}
+
+	.invoke-img {
+		background-image: url(../img/flamingo-invoke-sm@2x.png); 
+		width: 253px;
+		height: 57px;
+	}
+
+	.invoke-text {
+		position: relative;
+		top: -64px;
+		right: -56px;
+		max-width: 210px;
+	}
+
+	.guestlist-img {
+		background-image: url(../img/flamingo-guestlist-sm@2x.png); 
+		width: 313px;
+		height: 239px;
+	}
+
+	.calendar-img {
+		background-image: url(../img/flamingo-calendar-sm@2x.png); 
+		width: 313px;
+		height: 188px;
+	}
+
+	.wine-tasting-img {
+		background-image: url(../img/flamingo-winetasting-sm@2x.png); 
+		width: 313px;
+		height: 114px;
+		margin-bottom: 12px;
+	}
+
+	.pizza-club-img {
+		background-image: url(../img/flamingo-pizzaclub-sm@2x.png); 
+		width: 313px;
+		height: 101px;
+		margin-bottom: 12px;
+	}
+
+	.book-club-img {
+		background-image: url(../img/flamingo-bookclub-sm@2x.png); 
+		width: 313px;
+		height: 101px;		
+		margin-bottom: 12px;
+	}
+
+}
