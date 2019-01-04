@@ -23,6 +23,10 @@ a {
 	border-bottom: 1px solid #FFF;
 }
 
+p {
+	line-height: 2rem;
+}
+
 .btn {
 	padding: 12px 20px;
 	border-radius: 200px;
@@ -192,8 +196,34 @@ a {
 	font-size: 1.2rem;
 }
 
-.copyright {
+.legal, .legal a {
 	color: #999;
+	border-bottom: none;
+}
+
+.legal ul {
+	list-style: none;
+	padding: 0px;
+	margin: 0px;
+}
+
+.legal li {
+	display: inline-block;
+	padding-right: 1em;
+}
+
+
+/*--Privacy Policy--*/
+
+.privacy {
+	padding: 10% 15%;
+	background: #FEF78D;
+	color: #A29911;
+}
+
+.privacy a {
+	color: #A29911;
+	border-bottom: 1px solid #A29911;
 }
 
 
@@ -208,6 +238,13 @@ a {
 	.footer {
 		padding: 8% 8%;
 	}
+	
+	.privacy {
+		padding: 8% 8%;
+		background: #FEF78D;
+		color: #A29911;
+	}
+
 }
 
 @media (max-width: 720px) {
