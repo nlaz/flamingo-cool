@@ -45,6 +45,10 @@ app.get("/success", (req, res) => {
   res.sendFile(__dirname + "/public/success.html");
 });
 
+app.get("/privacy", (req, res) => {
+  res.sendFile(__dirname + "/public/privacy.html");
+});
+
 const createEvent = (userId, title, userName) => ({ userId, title, attending: [userId] });
 
 /*
