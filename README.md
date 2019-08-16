@@ -1,4 +1,4 @@
-# Flamingo
+# <img src="/images/felix.png" width="25" /> Flamingo
 
 Flamingo is a Slack app that makes it super easy to invite and gather friends.
 
@@ -12,4 +12,6 @@ Flamingo takes your get-together details and instantly turns it into an event ri
 
 Flamingo was built by [Rachel](https://rachelhnash.com) and [Niko](http://niko.pizza/) at [Orbital NYC](https://orbital.nyc/). Send questions or feedback to [help@flamingo.cool](mailto:help@flamingo.cool).
 
-<img src="/images/felix.png" width="100" />
+## License
+
+This project is [MIT licensed](/LICENSE).
